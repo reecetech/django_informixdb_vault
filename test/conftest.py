@@ -13,11 +13,9 @@ def pytest_configure():
         ),
         DATABASES={
             "default": {
-                "ENGINE": "django_informixdb",
+                "ENGINE": "django_informixdb_vault",
                 "SERVER": "informix",
                 "NAME": "adapter",
-                "USER": "informix",
-                "PASSWORD": "in4mix",
             },
         },
     )
