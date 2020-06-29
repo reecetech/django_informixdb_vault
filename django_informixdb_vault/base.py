@@ -1,3 +1,5 @@
+"""django_informixdb_vault: Vault authenticated Django Informix database driver"""
+
 import os
 
 import hvac
@@ -8,6 +10,11 @@ from django.db import OperationalError
 from django_informixdb import base
 
 class DatabaseWrapper(base.DatabaseWrapper):
+    """
+    django_informixdb_vault: Vault authenticated Django Informix database driver
+
+    Extends the django_informixdb DatabaseWrapper class
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,9 +50,10 @@ class DatabaseWrapper(base.DatabaseWrapper):
         client.token = vault_token
 
     def get_authenticated_client(self):
+        """Gets an authenticated Vault client.  Raises an exception if the client is not authenticated."""
         vault_uri = self._get_vault_uri()
         if vault_uri is None:
-            raise ImproperlyConfigured('vault_uri is a required setting for a Vault authenticated informix connection')
+            raise ImproperlyConfigured('VAULT_ADDR is a required setting for a Vault authenticated informix connection')
 
         hvac_client = hvac.Client(url=vault_uri)
 
@@ -58,8 +66,9 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
         try:
             if not hvac_client.is_authenticated():
-                raise ImproperlyConfigured(
-                    'Vault client failed to authenticate, provide JWT via K8s or basic token via settings'
+                raise OperationalError(
+                    'Vault client failed to authenticate, provide JWT via K8s '
+                    'or basic token via VAULT_TOKEN in settings'
                 )
         except hvac.exceptions.VaultError as err:
             msg = err.args[0]
