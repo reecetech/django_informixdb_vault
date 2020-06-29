@@ -29,7 +29,7 @@ setup(
     ],
     keywords='django informix vault',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['django~=2.2.0', 'pyodbc~=4.0.21', 'django_informixdb~=1.9.0'],
+    install_requires=['django~=2.2.0', 'pyodbc~=4.0.21', 'django_informixdb~=1.9.0', 'hvac~=0.10.4'],
     extras_require={
         'dev': ['check-manifest'],
         'test': ['coverage'],
