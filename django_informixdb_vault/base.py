@@ -27,7 +27,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
     def _get_vault_uri(self):
         vault_uri = self.settings_dict.get('VAULT_ADDR', None)
-        if vault_uri is None and 'VAULT_ADDR' in os.environ:
+        if not vault_uri and 'VAULT_ADDR' in os.environ:
             vault_uri = os.environ['VAULT_ADDR']
 
         return vault_uri
@@ -35,6 +35,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
     @staticmethod
     def _auth_via_k8s(client, role):
         try:
+            # TODO: make the path configurable
             with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'rb') as jwt_fh:
                 jwt = jwt_fh.read()
 
@@ -44,7 +45,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
     def _auth_via_token(self, client):
         vault_token = self.settings_dict.get('VAULT_TOKEN', None)
-        if vault_token is None and 'VAULT_TOKEN' in os.environ:
+        if not vault_token and 'VAULT_TOKEN' in os.environ:
             vault_token = os.environ['VAULT_TOKEN']
 
         client.token = vault_token
@@ -52,7 +53,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
     def get_authenticated_client(self):
         """Gets an authenticated Vault client.  Raises an exception if the client is not authenticated."""
         vault_uri = self._get_vault_uri()
-        if vault_uri is None:
+        if not vault_uri:
             raise ImproperlyConfigured('VAULT_ADDR is a required setting for a Vault authenticated informix connection')
 
         hvac_client = hvac.Client(url=vault_uri)
@@ -68,13 +69,53 @@ class DatabaseWrapper(base.DatabaseWrapper):
             if not hvac_client.is_authenticated():
                 raise OperationalError(
                     'Vault client failed to authenticate, provide JWT via K8s '
-                    'or basic token via VAULT_TOKEN in settings'
+                    'or basic token via VAULT_TOKEN in settings.  Ensure the credientials are valid and authorised.'
                 )
         except hvac.exceptions.VaultError as err:
             msg = err.args[0]
             raise OperationalError(msg)
 
         return hvac_client
+
+    def _get_vault_path(self):
+        vault_path = self.settings_dict.get('VAULT_PATH', None)
+        if not vault_path and 'VAULT_PATH' in os.environ:
+            vault_path = os.environ['VAULT_PATH']
+
+        return vault_path
+
+    def get_credentials_from_vault(self):
+        """Gets a username and password pair from Vault."""
+        vault_path = self._get_vault_path()
+        if not vault_path:
+            raise ImproperlyConfigured('VAULT_PATH is a required setting for a Vault authenticated informix connection')
+
+        try:
+            secrets_response = self.vault_client.secrets.kv.v2.read_secret_version(path=vault_path)
+
+            if 'data' not in secrets_response:
+                raise OperationalError('Response from Vault did not include required data')
+            if 'data' not in secrets_response['data']:
+                raise OperationalError('Response from Vault did not include required data')
+
+            secrets_data = secrets_response['data']['data']
+            if 'username' not in secrets_data and 'password' not in secrets_data:
+                raise OperationalError('Response from Vault did not include a username and password')
+            if 'username' not in secrets_data:
+                raise OperationalError('Response from Vault did not include a username')
+            if 'password' not in secrets_data:
+                raise OperationalError('Response from Vault did not include a password')
+
+        except hvac.exceptions.InvalidPath:
+            raise OperationalError(f"No data found at path '{vault_path}'")
+        except hvac.exceptions.Forbidden as err:
+            msg = err.args[0]
+            raise OperationalError(msg)
+        except hvac.exceptions.VaultError as err:
+            msg = err.args[0]
+            raise OperationalError(msg)
+
+        return secrets_data['username'], secrets_data['password']
 
     def get_connection_params(self):
         # django_informixdb expects USER and PASSWORD, so fake them for now
@@ -88,11 +129,9 @@ class DatabaseWrapper(base.DatabaseWrapper):
         del self.settings_dict['USER']
         del self.settings_dict['PASSWORD']
 
-        # XXX: TODO: implement vault lookup here
-        # XXX: TODO: set conn_params['USER'] and conn_params['PASSWORD'] to values from vault here
+        username, password = self.get_credentials_from_vault()
 
-        # XXX: hardcode just for testing, remove after the above is implemented
-        conn_params['USER'] = "informix"
-        conn_params['PASSWORD'] = "in4mix"
+        conn_params['USER'] = username
+        conn_params['PASSWORD'] = password
 
         return conn_params
