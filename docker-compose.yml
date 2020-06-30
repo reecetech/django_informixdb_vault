@@ -3,7 +3,7 @@ version: '3.6'
 
 services:
     test-runner:
-        image: ${uniq_test_id:-djifxivault:test-runner}
+        image: ${uniq_test_id:-djifxvault}:test-runner
         build:
             context: .
             dockerfile: Dockerfile.testing
@@ -18,6 +18,8 @@ services:
         depends_on:
             - db
             - vault
+        networks:
+            - djifxivault
         links:
             - db:informix
             - vault
@@ -31,6 +33,8 @@ services:
             DB_NAME: adapter
             DB_PASS: adapter
         privileged: true
+        networks:
+            - djifxivault
         ports:
             - "9088:9088"
             - "9089:9089"
@@ -42,6 +46,8 @@ services:
         hostname: vault
         environment:
             VAULT_DEV_ROOT_TOKEN_ID: 'test-token'
+        networks:
+            - djifxivault
         ports:
             - "8200:8200"
 
