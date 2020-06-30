@@ -3,7 +3,7 @@ version: '3.6'
 
 services:
     test-runner:
-        image: ${test_runner_tag:-djifxivault:test-runner}
+        image: ${uniq_test_id:-djifxivault:test-runner}
         build:
             context: .
             dockerfile: Dockerfile.testing
@@ -17,8 +17,10 @@ services:
               target: /opt/IBM/informix/etc/sqlhosts
         depends_on:
             - db
+            - vault
         links:
             - db:informix
+            - vault
     db:
         image: ibmcom/informix-developer-database:${ifx_version:-14.10.FC3DE}
         tty: true  # Needed to ensure container doesn't self terminate
@@ -35,5 +37,16 @@ services:
             - "27017:27017"
             - "27018:27018"
             - "27883:27883"
+    vault:
+        image: vault:${vault_version:-1.4.2}
+        hostname: vault
+        environment:
+            VAULT_DEV_ROOT_TOKEN_ID: 'test-token'
+        ports:
+            - "8200:8200"
+
+networks:
+    djifxivault:
+        name: ${uniq_test_id:-djifxivault}
 
 # vim: set sw=4:
