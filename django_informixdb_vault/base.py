@@ -16,6 +16,12 @@ class DatabaseWrapper(base.DatabaseWrapper):
     Extends the django_informixdb DatabaseWrapper class
     """
 
+    DEFAULT_K8S_AUTH_MOUNT_POINT = 'kubernetes'
+    DEFAULT_K8S_JWT = '/var/run/secrets/kubernetes.io/serviceaccount/token'
+
+    DEFAULT_KVV2_MOUNT_POINT = 'secret'
+
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -32,16 +38,53 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
         return vault_uri
 
-    @staticmethod
-    def _auth_via_k8s(client, role):
-        try:
-            # TODO: make the path configurable
-            with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'rb') as jwt_fh:
-                jwt = jwt_fh.read()
+    def _get_k8s_role(self):
+        role = self.settings_dict.get('VAULT_K8S_ROLE', None)
+        if not role and 'VAULT_K8S_ROLE' in os.environ:
+            role = os.environ['VAULT_K8S_ROLE']
 
-            client.auth_kubernetes(role, jwt)
-        except IOError:
-            pass
+        return role
+
+    def _get_jwt_path(self):
+        jwt_path = self.settings_dict.get('VAULT_K8S_JWT', None)
+        if not jwt_path and 'VAULT_K8S_JWT' in os.environ:
+            jwt_path = os.environ['VAULT_K8S_JWT']
+
+        if not jwt_path:
+            # Default value
+            jwt_path = self.DEFAULT_K8S_JWT
+
+        if not os.access(jwt_path, os.R_OK):
+            raise ImproperlyConfigured(f"Kubernetes Vault JWT is not readable at path {jwt_path}")
+
+        return jwt_path
+
+    def _get_kvv2_mount_point(self):
+        mount_point = self.settings_dict.get('VAULT_KVV2_MOUNT_POINT', None)
+        if not mount_point and 'VAULT_KVV2_MOUNT_POINT' in os.environ:
+            mount_point = os.environ['VAULT_KVV2_MOUNT_POINT']
+        if not mount_point:
+            mount_point = self.DEFAULT_KVV2_MOUNT_POINT
+
+        return mount_point
+
+    def _get_k8s_auth_mount_point(self):
+        mount_point = self.settings_dict.get('VAULT_K8S_AUTH_MOUNT_POINT', None)
+        if not mount_point and 'VAULT_K8S_AUTH_MOUNT_POINT' in os.environ:
+            mount_point = os.environ['VAULT_K8S_AUTH_MOUNT_POINT']
+        if not mount_point:
+            mount_point = self.DEFAULT_K8S_AUTH_MOUNT_POINT
+
+        return mount_point
+
+    def _auth_via_k8s(self, client):
+        role = self._get_k8s_role()
+        jwt_path = self._get_jwt_path()
+
+        with open(jwt_path, 'rb') as jwt_fh:
+            jwt = jwt_fh.read()
+
+        client.auth_kubernetes(role, jwt, mount_point=self._get_k8s_auth_mount_point())
 
     def _auth_via_token(self, client):
         vault_token = self.settings_dict.get('VAULT_TOKEN', None)
@@ -59,9 +102,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         hvac_client = hvac.Client(url=vault_uri)
 
         if self.settings_dict.get('VAULT_K8S_ROLE', None):
-            self._auth_via_k8s(hvac_client, self.settings_dict['VAULT_K8S_ROLE'])
-        elif os.access('/var/run/secrets/kubernetes.io/serviceaccount/token', os.R_OK):
-            raise ImproperlyConfigured('Kubernetes Vault JWT available, but VAULT_K8S_ROLE not configured in settings')
+            self._auth_via_k8s(hvac_client)
         else:
             self._auth_via_token(hvac_client)
 
@@ -91,7 +132,10 @@ class DatabaseWrapper(base.DatabaseWrapper):
             raise ImproperlyConfigured('VAULT_PATH is a required setting for a Vault authenticated informix connection')
 
         try:
-            secrets_response = self.vault_client.secrets.kv.v2.read_secret_version(path=vault_path)
+            secrets_response = self.vault_client.secrets.kv.v2.read_secret_version(
+                path=vault_path,
+                mount_point=self._get_kvv2_mount_point(),
+            )
 
             if 'data' not in secrets_response:
                 raise OperationalError('Response from Vault did not include required data')
@@ -118,6 +162,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         return secrets_data['username'], secrets_data['password']
 
     def get_connection_params(self):
+        """Returns connection parameters for Informix, with credentials from Vault"""
         # django_informixdb expects USER and PASSWORD, so fake them for now
         self.settings_dict['USER'] = ''
         self.settings_dict['PASSWORD'] = ''

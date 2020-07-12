@@ -20,7 +20,7 @@ services:
             - db
             - vault
         networks:
-            - djifxivault
+            - test
         links:
             - db:informix
             - vault
@@ -35,7 +35,7 @@ services:
             DB_PASS: adapter
         privileged: true
         networks:
-            - djifxivault
+            - test
         ports:
             - "9088:9088"
             - "9089:9089"
@@ -48,12 +48,12 @@ services:
         environment:
             VAULT_DEV_ROOT_TOKEN_ID: 'test-token'
         networks:
-            - djifxivault
+            - test
         ports:
             - "8200:8200"
 
 networks:
-    djifxivault:
+    test:
         name: ${uniq_test_id:-djifxivault}
 
 # vim: set sw=4:
