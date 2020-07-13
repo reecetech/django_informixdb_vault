@@ -40,5 +40,5 @@ def ifx_secret():
         secret={
             'username': 'informix',
             'password': 'in4mix',
-        }
+        },
     )

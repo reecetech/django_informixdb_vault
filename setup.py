@@ -9,7 +9,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='django_informixdb_vault',
-    version='0.0.1',
+    version='0.0.2',
     description='A database driver for Django to connect to an Informix db via ODBC, obtaining the credentials from Hashicorp Vault',
     long_description=long_description,
     url='https://github.com/reecetech/django_informixdb_vault',
