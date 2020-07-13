@@ -23,12 +23,4 @@ script:
   - sudo systemctl restart docker
   - bash test-in-docker.sh
 
-deploy:
-  provider: pypi
-  username: "__token__"
-  password:
-    secure: K+JzcfjFzj/ECNiZhkDTEpYDDrM242xqKaGWaMZasIOf04dOIy5zRND2gYdB3cwQg8atkqU8le0RZH4ab2p4fQyxah9TbEED6rLktFcngahIOZqhtZnXo1W61uIa2gO3enFiFfooNRoFxczwWRb1mOKsoJku8wPObixqA8tVpQ5S98ET0zcT5C0sx7nLvN9GmaJ2SB8UmN8v+dt15aoN+H7ZyTF6AUPrsfxTxazuvjBmMzUnI9EYPkOZAq3MHfr8bH3ViCfFGevtoLQByLY34joLHuoDrvkMedE5fDqopMZ9cwt54IQIeMZKMohWHAHbk/5q3O/QWS+75TNoLR4ZJav8OHxDYZ/sF1bHy7HJtaOLNnEZ+ghX9mOq3R4xeLqkRmk3d84x+WHYiapbcs04rbFs5+2c1hUPJbi78rwhKgAN0lXs154P94pIsUVni2NjstQMv/TdQoxrTk9q036oatZiKKF9iYf/vm2vq6Ge7eKfFX+iFL4y37eqm/IOurvQVcy+zumgKHTgnMwLnK4tJ/ImEeX8ICzQ3/jF/dMe0Nhy/xlOa3Qs2ichRjrKCI6LOSiLrAlR6asJA7SNF5xYRdW0kPq80bBoP7uwSH7kRvSQtqiaHHy73MMjLRD9GiprkZ8folCN0fd5Q3f1TpbEeTSd85tRmCKlhoUYFodp8nw=
-  on:
-    branch: master
-
 # vim: set sw=2:
