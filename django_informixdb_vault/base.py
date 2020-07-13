@@ -81,7 +81,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         role = self._get_k8s_role()
         jwt_path = self._get_jwt_path()
 
-        with open(jwt_path, 'rb') as jwt_fh:
+        with open(jwt_path, 'r', encoding='utf-8') as jwt_fh:
             jwt = jwt_fh.read()
 
         client.auth_kubernetes(role, jwt, mount_point=self._get_k8s_auth_mount_point())
