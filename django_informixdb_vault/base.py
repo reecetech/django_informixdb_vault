@@ -1,5 +1,8 @@
 """django_informixdb_vault: Vault authenticated Django Informix database driver"""
 
+# pylint: disable=logging-fstring-interpolation
+
+import logging
 import os
 
 import hvac
@@ -8,6 +11,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 
 from django_informixdb import base
+
+logger = logging.getLogger(__name__)
 
 class DatabaseWrapper(base.DatabaseWrapper):
     """
@@ -21,15 +26,6 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
     DEFAULT_KVV2_MOUNT_POINT = 'secret'
 
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.vault_client = None
-        if 'vault_client' in kwargs:
-            self.vault_client = kwargs['vault_client']
-        else:
-            self.vault_client = self.get_authenticated_client()
 
     def _get_vault_uri(self):
         vault_uri = self.settings_dict.get('VAULT_ADDR', None)
@@ -131,8 +127,10 @@ class DatabaseWrapper(base.DatabaseWrapper):
         if not vault_path:
             raise ImproperlyConfigured('VAULT_PATH is a required setting for a Vault authenticated informix connection')
 
+        client = self.get_authenticated_client()
+
         try:
-            secrets_response = self.vault_client.secrets.kv.v2.read_secret_version(
+            secrets_response = client.secrets.kv.v2.read_secret_version(
                 path=vault_path,
                 mount_point=self._get_kvv2_mount_point(),
             )
@@ -175,6 +173,10 @@ class DatabaseWrapper(base.DatabaseWrapper):
         del self.settings_dict['PASSWORD']
 
         username, password = self.get_credentials_from_vault()
+        logger.info(
+            f"Retrieved username ({username}) and password from Vault"
+            f"for database server {self.settings_dict['SERVER']}"
+        )
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
