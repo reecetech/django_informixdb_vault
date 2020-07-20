@@ -1,5 +1,8 @@
 """django_informixdb_vault: Vault authenticated Django Informix database driver"""
 
+# pylint: disable=logging-fstring-interpolation
+
+import logging
 import os
 
 import hvac
@@ -8,6 +11,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 
 from django_informixdb import base
+
+logger = logging.getLogger(__name__)
 
 class DatabaseWrapper(base.DatabaseWrapper):
     """
@@ -168,6 +173,10 @@ class DatabaseWrapper(base.DatabaseWrapper):
         del self.settings_dict['PASSWORD']
 
         username, password = self.get_credentials_from_vault()
+        logger.info(
+            f"Retrieved username ({username}) and password from Vault"
+            f"for database server {self.settings_dict['SERVER']}"
+        )
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
