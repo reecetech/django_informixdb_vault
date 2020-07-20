@@ -22,15 +22,6 @@ class DatabaseWrapper(base.DatabaseWrapper):
     DEFAULT_KVV2_MOUNT_POINT = 'secret'
 
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.vault_client = None
-        if 'vault_client' in kwargs:
-            self.vault_client = kwargs['vault_client']
-        else:
-            self.vault_client = self.get_authenticated_client()
-
     def _get_vault_uri(self):
         vault_uri = self.settings_dict.get('VAULT_ADDR', None)
         if not vault_uri and 'VAULT_ADDR' in os.environ:
@@ -131,8 +122,10 @@ class DatabaseWrapper(base.DatabaseWrapper):
         if not vault_path:
             raise ImproperlyConfigured('VAULT_PATH is a required setting for a Vault authenticated informix connection')
 
+        client = self.get_authenticated_client()
+
         try:
-            secrets_response = self.vault_client.secrets.kv.v2.read_secret_version(
+            secrets_response = client.secrets.kv.v2.read_secret_version(
                 path=vault_path,
                 mount_point=self._get_kvv2_mount_point(),
             )
