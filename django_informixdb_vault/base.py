@@ -175,7 +175,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         username, password = self.get_credentials_from_vault()
         logger.info(
             f"Retrieved username ({username}) and password from Vault"
-            f"for database server {self.settings_dict['SERVER']}"
+            f" for database server {self.settings_dict['SERVER']}"
         )
 
         conn_params['USER'] = username
