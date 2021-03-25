@@ -26,7 +26,6 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
     DEFAULT_KVV2_MOUNT_POINT = 'secret'
 
-
     def _get_vault_uri(self):
         vault_uri = self.settings_dict.get('VAULT_ADDR', None)
         if not vault_uri and 'VAULT_ADDR' in os.environ:
@@ -168,9 +167,17 @@ class DatabaseWrapper(base.DatabaseWrapper):
         # parse/get conn_params from django_informixdb
         conn_params = super().get_connection_params()
 
-        # We don't actually use USER and PASSWORD, so delete them
-        del self.settings_dict['USER']
-        del self.settings_dict['PASSWORD']
+        # We don't actually use USER and PASSWORD, so delete them.
+        try:
+            del self.settings_dict['USER']
+        except KeyError:
+            # Another thread may have already deleted it
+            pass
+        try:
+            del self.settings_dict['PASSWORD']
+        except KeyError:
+            # Another thread may have already deleted it
+            pass
 
         username, password = self.get_credentials_from_vault()
         logger.info(
