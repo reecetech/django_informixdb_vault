@@ -168,12 +168,16 @@ class DatabaseWrapper(base.DatabaseWrapper):
         conn_params = super().get_connection_params()
 
         # We don't actually use USER and PASSWORD, so delete them.
-        # As this method can be called from multiple threads, it's
-        # possible that they have already been deleted.
-        if 'USER' in self.settings_dict:
+        try:
             del self.settings_dict['USER']
-        if 'PASSWORD' in self.settings_dict:
+        except KeyError:
+            # Another thread may have already deleted it
+            pass
+        try:
             del self.settings_dict['PASSWORD']
+        except KeyError:
+            # Another thread may have already deleted it
+            pass
 
         username, password = self.get_credentials_from_vault()
         logger.info(
