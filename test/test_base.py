@@ -45,8 +45,6 @@ def test_get_connection_params_multiple_threads(db_config, mocker):
 
     def get_conn_params_worker():
         db_conn.get_connection_params()
-        assert "USER" not in db_conn.settings_dict
-        assert "PASSWORD" not in db_conn.settings_dict
 
     threads = []
     for tnum in range(num_threads):
