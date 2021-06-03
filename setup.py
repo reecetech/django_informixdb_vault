@@ -9,7 +9,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='django_informixdb_vault',
-    version='0.3.0',
+    version='0.3.1',
     description='A database driver for Django to connect to an Informix db via ODBC, obtaining the credentials from Hashicorp Vault',
     long_description=long_description,
     long_description_content_type='text/x-rst',
@@ -31,7 +31,7 @@ setup(
     ],
     keywords='django informix vault',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['django~=2.2.0', 'pyodbc~=4.0.21', 'django_informixdb~=1.10.0', 'hvac~=0.10.4'],
+    install_requires=['django>=2.2.0,<4', 'pyodbc~=4.0.21', 'django_informixdb~=1.10.0', 'hvac~=0.10.4'],
     extras_require={
         'dev': ['check-manifest'],
         'test': ['coverage'],
