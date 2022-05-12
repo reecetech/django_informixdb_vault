@@ -41,13 +41,6 @@ jobs:
         with:
           python-version: '3.10'  # Should match Pipfile / "python_version"
 
-      - name: Build package
-        shell: bash
-        run: |
-          set -euo pipefail
-          export VERSION="${{ steps.version.outputs.version }}"
-          python3 setup.py build sdist
-
       - name: Release version on GitHub
         uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0
         with:
@@ -55,6 +48,12 @@ jobs:
           draft: false
           prerelease: false
           automatic_release_tag: "${{ steps.version.outputs.version }}"
+
+      - name: Build package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 setup.py build sdist
 
       - name: Release version on PyPi
         uses: pypa/gh-action-pypi-publish@release/v1

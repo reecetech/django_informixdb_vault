@@ -71,3 +71,6 @@ target/
 
 # Environment
 .envrc
+
+# Version file
+django_informixdb_vault/version.py
