@@ -72,7 +72,8 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: dist  # the package from the `build` step
+          name: dist  # the name of the artefact from the `build` step
+          path: dist/
 
       - name: Release version on GitHub
         uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0
