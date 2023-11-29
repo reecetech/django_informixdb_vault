@@ -5,7 +5,6 @@ persistent=no
 disable=cyclic-import,
         duplicate-code,
         fixme,
-        locally-enabled,
         too-few-public-methods,
         too-many-instance-attributes,
         raise-missing-from,
