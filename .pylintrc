@@ -18,7 +18,6 @@ output-format=colorized
 reports=no
 
 [BASIC]
-bad-functions=
 include-naming-hint=yes
 
 [FORMAT]
