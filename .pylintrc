@@ -8,6 +8,7 @@ disable=cyclic-import,
         too-few-public-methods,
         too-many-instance-attributes,
         raise-missing-from,
+        abstract-method
 
 [REPORTS]
 output-format=colorized
