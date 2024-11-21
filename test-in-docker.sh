@@ -8,19 +8,19 @@ export uniq_test_id="${uniq_test_id:-djifxvault}"
 
 cleanup() {
     echo "--- cleaning up: previous code ${?}"
-    docker-compose -p "${uniq_test_id}" down --volumes --remove-orphans
+    docker compose -p "${uniq_test_id}" down --volumes --remove-orphans
 }
 trap cleanup EXIT
 
 echo "--- building docker images"
-docker-compose -p "${uniq_test_id}" build
+docker compose -p "${uniq_test_id}" build
 
 echo "--- starting dependencies"
-docker-compose -p "${uniq_test_id}" up -d db
-docker-compose -p "${uniq_test_id}" up -d vault
+docker compose -p "${uniq_test_id}" up -d db
+docker compose -p "${uniq_test_id}" up -d vault
 
 echo "--- waiting for dependencies"
-docker-compose -p "${uniq_test_id}" run test-runner /usr/local/bin/wait-for-deps.sh
+docker compose -p "${uniq_test_id}" run test-runner /usr/local/bin/wait-for-deps.sh
 
 echo "--- running tests"
-docker-compose -p "${uniq_test_id}" run test-runner tox
+docker compose -p "${uniq_test_id}" run test-runner tox
