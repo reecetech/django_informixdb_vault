@@ -34,6 +34,7 @@ jobs:
         id: version
         with:
           scheme: semver
+          pep440: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
