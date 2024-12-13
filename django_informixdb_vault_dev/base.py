@@ -166,7 +166,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         if 'PASSWORD' not in self.settings_dict:
             self.settings_dict['PASSWORD'] = ''
 
-        # parse/get conn_params from django_informixdb_dev
+        # parse/get conn_params from django_informixdb
         conn_params = super().get_connection_params()
 
         username = self.settings_dict['USER']
