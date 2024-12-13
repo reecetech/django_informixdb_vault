@@ -7,15 +7,12 @@ import os
 
 import hvac
 
-import threading
-
 from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 
 from django_informixdb_dev import base
 
 logger = logging.getLogger(__name__)
-thread_locals = threading.local()
 
 class DatabaseWrapper(base.DatabaseWrapper):
     """
@@ -175,14 +172,6 @@ class DatabaseWrapper(base.DatabaseWrapper):
         username = self.settings_dict['USER']
         password = self.settings_dict['PASSWORD']
 
-        if (username and password):
-            conn_params['USER'] = username
-            conn_params['PASSWORD'] = password
-
-            return conn_params
-
-        username = getattr(thread_locals, 'VAULT_USERNAME', None)
-        password = getattr(thread_locals, 'VAULT_PASSWORD', None)
         if (username and password):
             conn_params['USER'] = username
             conn_params['PASSWORD'] = password
