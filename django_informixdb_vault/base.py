@@ -160,30 +160,31 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
     def get_connection_params(self):
         """Returns connection parameters for Informix, with credentials from Vault"""
-        # django_informixdb expects USER and PASSWORD, so fake them for now
-        self.settings_dict['USER'] = ''
-        self.settings_dict['PASSWORD'] = ''
+        # django_informixdb expects USER and PASSWORD, so fake them if missing
+        if 'USER' not in self.settings_dict:
+            self.settings_dict['USER'] = ''
+        if 'PASSWORD' not in self.settings_dict:
+            self.settings_dict['PASSWORD'] = ''
 
         # parse/get conn_params from django_informixdb
         conn_params = super().get_connection_params()
 
-        # We don't actually use USER and PASSWORD, so delete them.
-        try:
-            del self.settings_dict['USER']
-        except KeyError:
-            # Another thread may have already deleted it
-            pass
-        try:
-            del self.settings_dict['PASSWORD']
-        except KeyError:
-            # Another thread may have already deleted it
-            pass
+        username = self.settings_dict['USER']
+        password = self.settings_dict['PASSWORD']
+
+        if (username and password):
+            conn_params['USER'] = username
+            conn_params['PASSWORD'] = password
+
+            return conn_params
 
         username, password = self.get_credentials_from_vault()
         logger.info(
             f"Retrieved username ({username}) and password from Vault"
             f" for database server {self.settings_dict['SERVER']}"
         )
+        self.settings_dict['USER'] = username
+        self.settings_dict['PASSWORD'] = password
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
