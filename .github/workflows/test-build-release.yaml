@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
-          echo "VERSION = '${VERSION}'" > django_informixdb_vault/version.py
+          echo "VERSION = '${VERSION}'" > django_informixdb_vault_dev/version.py
           pip install "setuptools>=62.2.0"
           python3 setup.py sdist
 
