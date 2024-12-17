@@ -173,7 +173,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         username = self.settings_dict['USER']
         password = self.settings_dict['PASSWORD']
 
-         maximum_credential_lifetime = \
+        maximum_credential_lifetime = \
             self.settings_dict.get('VAULT_MAXIMUM_CREDENTIAL_LIFETIME', 3600)
         if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
             elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
@@ -181,7 +181,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         else:
             credentials_need_refresh = True
 
-        if (username and password and !credentials_need_refresh):
+        if (username and password and not credentials_need_refresh):
             conn_params['USER'] = username
             conn_params['PASSWORD'] = password
 
