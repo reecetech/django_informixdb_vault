@@ -1,11 +1,11 @@
-"""Tests for django_informix_vault/base.py
+"""Tests for django_informix_vault_dev/base.py
 """
 import random
 import time
 
 import pytest
 
-from django_informixdb_vault.base import DatabaseWrapper as VaultDatabaseWrapper
+from django_informixdb_vault_dev.base import DatabaseWrapper as VaultDatabaseWrapper
 
 from .thread_utils import PropagatingThread
 
@@ -13,7 +13,7 @@ from .thread_utils import PropagatingThread
 @pytest.fixture
 def db_config():
     return {
-        "ENGINE": "django_informixdb_vault",
+        "ENGINE": "django_informixdb_vault_dev",
         "SERVER": "informix",
         "NAME": "sysmaster",
         "VAULT_ADDR": "http://vault:8200",
@@ -25,7 +25,7 @@ def db_config():
 def test_get_connection_params_multiple_threads(db_config, mocker):
     """Test to catch thread safety issues with updating the settings_dict
 
-    django_informix_vault/base.py's get_connection_params method
+    django_informix_vault_dev/base.py's get_connection_params method
     modifies self.settings_dict from django.db.backends.base.BaseDatabaseWrapper
     """
     num_threads = 10
@@ -39,7 +39,7 @@ def test_get_connection_params_multiple_threads(db_config, mocker):
 
     # Patch the non-vault parent class's get_connection_params method:
     mocker.patch(
-        "django_informixdb.base.DatabaseWrapper.get_connection_params",
+        "django_informixdb_dev.base.DatabaseWrapper.get_connection_params",
         side_effect=slow_get_conn_params,
     )
 

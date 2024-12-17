@@ -1,4 +1,4 @@
-"""django_informixdb_vault: Vault authenticated Django Informix database driver"""
+"""django_informixdb_vault_dev: Vault authenticated Django Informix database driver"""
 
 # pylint: disable=logging-fstring-interpolation
 
@@ -10,15 +10,15 @@ import hvac
 from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 
-from django_informixdb import base
+from django_informixdb_dev import base
 
 logger = logging.getLogger(__name__)
 
 class DatabaseWrapper(base.DatabaseWrapper):
     """
-    django_informixdb_vault: Vault authenticated Django Informix database driver
+    django_informixdb_vault_dev: Vault authenticated Django Informix database driver
 
-    Extends the django_informixdb DatabaseWrapper class
+    Extends the django_informixdb_dev DatabaseWrapper class
     """
 
     DEFAULT_K8S_AUTH_MOUNT_POINT = 'kubernetes'
@@ -166,7 +166,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         if 'PASSWORD' not in self.settings_dict:
             self.settings_dict['PASSWORD'] = ''
 
-        # parse/get conn_params from django_informixdb
+        # parse/get conn_params from django_informixdb_dev
         conn_params = super().get_connection_params()
 
         username = self.settings_dict['USER']

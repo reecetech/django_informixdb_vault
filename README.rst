@@ -1,7 +1,7 @@
 Django InformixDB Vault
 =======================
 
-Extends the database driver for Django `django_informixdb` to retrieve credentials from a Hashicorp Vault service.
+Extends the database driver for Django `django_informixdb_dev` to retrieve credentials from a Hashicorp Vault service.
 
 
 Assumptions

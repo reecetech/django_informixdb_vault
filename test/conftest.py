@@ -14,7 +14,7 @@ def pytest_configure():
         ),
         DATABASES={
             "default": {
-                "ENGINE": "django_informixdb_vault",
+                "ENGINE": "django_informixdb_vault_dev",
                 "SERVER": "informix",
                 "NAME": "adapter",
                 "VAULT_ADDR": "http://vault:8200",
