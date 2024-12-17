@@ -4,6 +4,7 @@
 
 import logging
 import os
+from datetime import datetime
 
 import hvac
 
@@ -172,7 +173,15 @@ class DatabaseWrapper(base.DatabaseWrapper):
         username = self.settings_dict['USER']
         password = self.settings_dict['PASSWORD']
 
-        if (username and password):
+        maximum_credential_lifetime = \
+            self.settings_dict.get('VAULT_MAXIMUM_CREDENTIAL_LIFETIME', 3600)
+        if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
+            elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
+            credentials_need_refresh = elapsed.seconds >= maximum_credential_lifetime
+        else:
+            credentials_need_refresh = True
+
+        if (username and password and not credentials_need_refresh):
             conn_params['USER'] = username
             conn_params['PASSWORD'] = password
 
@@ -185,6 +194,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         )
         self.settings_dict['USER'] = username
         self.settings_dict['PASSWORD'] = password
+        self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
