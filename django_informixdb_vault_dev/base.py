@@ -177,7 +177,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
             self.settings_dict.get('VAULT_MAXIMUM_CREDENTIAL_LIFETIME', 3600)
         if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
             elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
-            credentials_need_refresh = elapsed.seconds >= maximum_credential_lifetime
+            credentials_need_refresh = elapsed.total_seconds() >= maximum_credential_lifetime
         elif maximum_credential_lifetime:
             # Settings configured for refreshes but we don't yet have a credential start time
             credentials_need_refresh = True
@@ -192,13 +192,13 @@ class DatabaseWrapper(base.DatabaseWrapper):
             return conn_params
 
         username, password = self.get_credentials_from_vault()
+        self.settings_dict['USER'] = username
+        self.settings_dict['PASSWORD'] = password
+        self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
         logger.info(
             f"Retrieved username ({username}) and password from Vault"
             f" for database server {self.settings_dict['SERVER']}"
         )
-        self.settings_dict['USER'] = username
-        self.settings_dict['PASSWORD'] = password
-        self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
