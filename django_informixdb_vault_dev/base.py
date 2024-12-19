@@ -4,6 +4,7 @@
 
 import logging
 import os
+import threading
 from datetime import datetime
 
 import hvac
@@ -12,6 +13,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 
 from django_informixdb_dev import base
+
+lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +162,18 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
         return secrets_data['username'], secrets_data['password']
 
+    def _credentials_need_refresh(self):
+        maximum_credential_lifetime = \
+            self.settings_dict.get('VAULT_MAXIMUM_CREDENTIAL_LIFETIME', 3600)
+        if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
+            elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
+            return elapsed.total_seconds() >= maximum_credential_lifetime
+        if maximum_credential_lifetime:
+            # Settings configured for refreshes but we don't yet have a credential start time
+            return True
+        # Don't refresh if VAULT_MAXIMUM_CREDENTIAL_LIFETIME is set to None
+        return False
+
     def get_connection_params(self):
         """Returns connection parameters for Informix, with credentials from Vault"""
         # django_informixdb expects USER and PASSWORD, so fake them if missing
@@ -173,32 +188,22 @@ class DatabaseWrapper(base.DatabaseWrapper):
         username = self.settings_dict['USER']
         password = self.settings_dict['PASSWORD']
 
-        maximum_credential_lifetime = \
-            self.settings_dict.get('VAULT_MAXIMUM_CREDENTIAL_LIFETIME', 3600)
-        if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
-            elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
-            credentials_need_refresh = elapsed.total_seconds() >= maximum_credential_lifetime
-        elif maximum_credential_lifetime:
-            # Settings configured for refreshes but we don't yet have a credential start time
-            credentials_need_refresh = True
-        else:
-            # Don't refresh if VAULT_MAXIMUM_CREDENTIAL_LIFETIME is set to None
-            credentials_need_refresh = False
-
-        if username and password and not credentials_need_refresh:
+        if username and password and not self._credentials_need_refresh():
             conn_params['USER'] = username
             conn_params['PASSWORD'] = password
 
             return conn_params
 
-        username, password = self.get_credentials_from_vault()
-        self.settings_dict['USER'] = username
-        self.settings_dict['PASSWORD'] = password
-        self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
-        logger.info(
-            f"Retrieved username ({username}) and password from Vault"
-            f" for database server {self.settings_dict['SERVER']}"
-        )
+        with lock:
+            if self._credentials_need_refresh():
+                username, password = self.get_credentials_from_vault()
+                logger.info(
+                    f"Retrieved username ({username}) and password from Vault"
+                    f" for database server {self.settings_dict['SERVER']}"
+                )
+                self.settings_dict['USER'] = username
+                self.settings_dict['PASSWORD'] = password
+                self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
