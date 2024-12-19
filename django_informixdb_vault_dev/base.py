@@ -4,7 +4,7 @@
 
 import logging
 import os
-import threading
+import multiprocessing
 from datetime import datetime
 
 import hvac
@@ -14,7 +14,7 @@ from django.db import OperationalError
 
 from django_informixdb_dev import base
 
-lock = threading.Lock()
+lock = multiprocessing.Lock()
 
 logger = logging.getLogger(__name__)
 
