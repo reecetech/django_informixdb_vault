@@ -86,7 +86,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
         if not maximum_credential_lifetime and 'VAULT_MAXIMUM_CREDENTIAL_LIFETIME' in os.environ:
             maximum_credential_lifetime = os.environ['VAULT_MAXIMUM_CREDENTIAL_LIFETIME']
         if not maximum_credential_lifetime:
-            maximum_credential_lifetime = self.DEFAULT_VAULT_MAXIMUM_CREDENTIAL_LIFETIME
+            maximum_credential_lifetime = self.DEFAULT_MAXIMUM_CREDENTIAL_LIFETIME
 
         return maximum_credential_lifetime
 
