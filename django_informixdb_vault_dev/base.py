@@ -30,6 +30,8 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
     DEFAULT_KVV2_MOUNT_POINT = 'secret'
 
+    DEFAULT_MAXIMUM_CREDENTIAL_LIFETIME = 3600
+
     def _get_vault_uri(self):
         vault_uri = self.settings_dict.get('VAULT_ADDR', None)
         if not vault_uri and 'VAULT_ADDR' in os.environ:
@@ -75,6 +77,18 @@ class DatabaseWrapper(base.DatabaseWrapper):
             mount_point = self.DEFAULT_K8S_AUTH_MOUNT_POINT
 
         return mount_point
+
+    def _get_maximum_credential_lifetime(self):
+        maximum_credential_lifetime = self.settings_dict.get(
+            'VAULT_MAXIMUM_CREDENTIAL_LIFETIME',
+            None
+        )
+        if not maximum_credential_lifetime and 'VAULT_MAXIMUM_CREDENTIAL_LIFETIME' in os.environ:
+            maximum_credential_lifetime = os.environ['VAULT_MAXIMUM_CREDENTIAL_LIFETIME']
+        if not maximum_credential_lifetime:
+            maximum_credential_lifetime = self.DEFAULT_VAULT_MAXIMUM_CREDENTIAL_LIFETIME
+
+        return maximum_credential_lifetime
 
     def _auth_via_k8s(self, client):
         role = self._get_k8s_role()
@@ -163,16 +177,11 @@ class DatabaseWrapper(base.DatabaseWrapper):
         return secrets_data['username'], secrets_data['password']
 
     def _credentials_need_refresh(self):
-        maximum_credential_lifetime = \
-            self.settings_dict.get('VAULT_MAXIMUM_CREDENTIAL_LIFETIME', 3600)
+        maximum_credential_lifetime = self._get_maximum_credential_lifetime()
         if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
             elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
             return elapsed.total_seconds() >= maximum_credential_lifetime
-        if maximum_credential_lifetime:
-            # Settings configured for refreshes but we don't yet have a credential start time
-            return True
-        # Don't refresh if VAULT_MAXIMUM_CREDENTIAL_LIFETIME is set to None
-        return False
+        return bool(maximum_credential_lifetime)
 
     def get_connection_params(self):
         """Returns connection parameters for Informix, with credentials from Vault"""
@@ -198,6 +207,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
             if self._credentials_need_refresh():
                 username, password = self.get_credentials_from_vault()
                 logger.info(
+                    f"PID: {os.getpid()} "
                     f"Retrieved username ({username}) and password from Vault"
                     f" for database server {self.settings_dict['SERVER']}"
                 )
