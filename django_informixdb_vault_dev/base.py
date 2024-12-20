@@ -4,7 +4,7 @@
 
 import logging
 import os
-import multiprocessing
+import threading
 from datetime import datetime
 
 import hvac
@@ -14,7 +14,7 @@ from django.db import OperationalError
 
 from django_informixdb_dev import base
 
-lock = multiprocessing.Lock()
+lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
 
@@ -178,9 +178,15 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
     def _credentials_need_refresh(self):
         maximum_credential_lifetime = self._get_maximum_credential_lifetime()
+        logger.info(f"maximum_credential_lifetime: {maximum_credential_lifetime}")
         if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
+            logger.info(f"self.settings_dict['CREDENTIALS_START_TIME']: {self.settings_dict['CREDENTIALS_START_TIME']}")
             elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
+            logger.info(f"elapsed.total_seconds(): {elapsed.total_seconds()}")
+            logger.info(f"elapsed.total_seconds() >= maximum_credential_lifetime: {elapsed.total_seconds() >= maximum_credential_lifetime}")
             return elapsed.total_seconds() >= maximum_credential_lifetime
+        logger.info("maximum_credential_lifetime is falsy OR 'CREDENTIALS_START_TIME' not in self.settings_dict")
+        logger.info(f"Returning {bool(maximum_credential_lifetime)}")
         return bool(maximum_credential_lifetime)
 
     def get_connection_params(self):
@@ -207,7 +213,6 @@ class DatabaseWrapper(base.DatabaseWrapper):
             if self._credentials_need_refresh():
                 username, password = self.get_credentials_from_vault()
                 logger.info(
-                    f"PID: {os.getpid()} "
                     f"Retrieved username ({username}) and password from Vault"
                     f" for database server {self.settings_dict['SERVER']}"
                 )
