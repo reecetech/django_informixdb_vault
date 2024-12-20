@@ -213,6 +213,9 @@ class DatabaseWrapper(base.DatabaseWrapper):
                 self.settings_dict['USER'] = username
                 self.settings_dict['PASSWORD'] = password
                 self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
+            else:
+                username = self.settings_dict['USER']
+                password = self.settings_dict['PASSWORD']
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
