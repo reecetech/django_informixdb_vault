@@ -4,6 +4,7 @@
 
 import logging
 import os
+import threading
 from datetime import datetime
 
 import hvac
@@ -12,6 +13,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 
 from django_informixdb import base
+
+threading_lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,8 @@ class DatabaseWrapper(base.DatabaseWrapper):
     DEFAULT_K8S_JWT = '/var/run/secrets/kubernetes.io/serviceaccount/token'
 
     DEFAULT_KVV2_MOUNT_POINT = 'secret'
+
+    DEFAULT_MAXIMUM_CREDENTIAL_LIFETIME = 3600
 
     def _get_vault_uri(self):
         vault_uri = self.settings_dict.get('VAULT_ADDR', None)
@@ -72,6 +77,18 @@ class DatabaseWrapper(base.DatabaseWrapper):
             mount_point = self.DEFAULT_K8S_AUTH_MOUNT_POINT
 
         return mount_point
+
+    def _get_maximum_credential_lifetime(self):
+        maximum_credential_lifetime = self.settings_dict.get(
+            'VAULT_MAXIMUM_CREDENTIAL_LIFETIME',
+            None
+        )
+        if not maximum_credential_lifetime and 'VAULT_MAXIMUM_CREDENTIAL_LIFETIME' in os.environ:
+            maximum_credential_lifetime = os.environ['VAULT_MAXIMUM_CREDENTIAL_LIFETIME']
+        if not maximum_credential_lifetime:
+            maximum_credential_lifetime = self.DEFAULT_MAXIMUM_CREDENTIAL_LIFETIME
+
+        return maximum_credential_lifetime
 
     def _auth_via_k8s(self, client):
         role = self._get_k8s_role()
@@ -159,6 +176,13 @@ class DatabaseWrapper(base.DatabaseWrapper):
 
         return secrets_data['username'], secrets_data['password']
 
+    def _credentials_need_refresh(self):
+        maximum_credential_lifetime = self._get_maximum_credential_lifetime()
+        if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
+            elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
+            return elapsed.total_seconds() >= maximum_credential_lifetime
+        return bool(maximum_credential_lifetime)
+
     def get_connection_params(self):
         """Returns connection parameters for Informix, with credentials from Vault"""
         # django_informixdb expects USER and PASSWORD, so fake them if missing
@@ -173,32 +197,25 @@ class DatabaseWrapper(base.DatabaseWrapper):
         username = self.settings_dict['USER']
         password = self.settings_dict['PASSWORD']
 
-        maximum_credential_lifetime = \
-            self.settings_dict.get('VAULT_MAXIMUM_CREDENTIAL_LIFETIME', 3600)
-        if maximum_credential_lifetime and 'CREDENTIALS_START_TIME' in self.settings_dict:
-            elapsed = datetime.now() - self.settings_dict['CREDENTIALS_START_TIME']
-            credentials_need_refresh = elapsed.seconds >= maximum_credential_lifetime
-        elif maximum_credential_lifetime:
-            # Settings configured for refreshes but we don't yet have a credential start time
-            credentials_need_refresh = True
-        else:
-            # Don't refresh if VAULT_MAXIMUM_CREDENTIAL_LIFETIME is set to None
-            credentials_need_refresh = False
-
-        if username and password and not credentials_need_refresh:
+        if username and password and not self._credentials_need_refresh():
             conn_params['USER'] = username
             conn_params['PASSWORD'] = password
 
             return conn_params
 
-        username, password = self.get_credentials_from_vault()
-        logger.info(
-            f"Retrieved username ({username}) and password from Vault"
-            f" for database server {self.settings_dict['SERVER']}"
-        )
-        self.settings_dict['USER'] = username
-        self.settings_dict['PASSWORD'] = password
-        self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
+        with threading_lock:
+            if self._credentials_need_refresh():
+                username, password = self.get_credentials_from_vault()
+                logger.info(
+                    f"Retrieved username ({username}) and password from Vault"
+                    f" for database server {self.settings_dict['SERVER']}"
+                )
+                self.settings_dict['USER'] = username
+                self.settings_dict['PASSWORD'] = password
+                self.settings_dict['CREDENTIALS_START_TIME'] = datetime.now()
+            else:
+                username = self.settings_dict['USER']
+                password = self.settings_dict['PASSWORD']
 
         conn_params['USER'] = username
         conn_params['PASSWORD'] = password
