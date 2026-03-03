@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run tests
         shell: bash
@@ -27,7 +27,7 @@ jobs:
       version: "${{ steps.version.outputs.version }}"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get next version
         uses: reecetech/version-increment@2024.10.1
@@ -35,9 +35,10 @@ jobs:
         with:
           scheme: semver
           pep440: true
+          increment: minor
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'  # Should match Pipfile / "python_version"
 
@@ -50,7 +51,7 @@ jobs:
           pip install "setuptools>=62.2.0"
           python3 setup.py sdist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -63,9 +64,12 @@ jobs:
       - test
       - build
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist  # the name of the artefact from the `build` step
           path: dist/
