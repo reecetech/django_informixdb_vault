@@ -152,7 +152,7 @@ ENV HOME=/src
 ENV PATH=/opt/py${py_ver}/bin:"${PATH}"
 WORKDIR /src
 
-ADD django_informixdb/ /src/django_informixdb/
+ADD django_informixdb_vault/ /src/django_informixdb_vault/
 ADD README.rst setup.* tox.ini /src/
 RUN tox -e "$(tox --listenvs | grep py${py_ver} | tr '\n' ',')" --notest  # prep venvs
 
