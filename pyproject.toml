@@ -22,14 +22,15 @@ classifiers=[
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
 ]
 
 dynamic = ["version", "readme"]
 
 dependencies = [
-    "django >= 3.2.0, < 5",
-    "django_informixdb ~= 1.11.4",
-    "hvac ~= 0.10.4",
+    "hvac < 3",
+    "django >= 3.2.0, < 6",
+    "django_informixdb ~= 1.13.0",
     "pyodbc >= 4.0.0, < 5"
 ]
 
