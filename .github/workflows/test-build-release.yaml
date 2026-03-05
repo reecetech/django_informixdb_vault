@@ -35,7 +35,7 @@ jobs:
         with:
           scheme: semver
           pep440: true
-          increment: minor
+          increment: patch
 
       - name: Setup Python
         uses: actions/setup-python@v6
