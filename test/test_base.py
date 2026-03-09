@@ -164,6 +164,7 @@ def test_get_authenticated_client_raises_exception(
 def test_get_credentials_from_vault(mocker, db_wrapper):
     mock_client = MagicMock()
     mocker.patch('hvac.Client', return_value=mock_client)
+    mock_client.is_authenticated.return_value = True
     mock_client.secrets.kv.v2.read_secret_version.return_value = {
         'data': {'data': {'username': 'test-user', 'password': 'test-pass'}}
     }
@@ -180,10 +181,10 @@ def test_get_credentials_from_vault(mocker, db_wrapper):
 
 
 def test_get_credentials_from_vault_raises_exception(mocker, db_wrapper):
+    from hvac.exceptions import Forbidden
     mock_client = MagicMock()
     mocker.patch('hvac.Client', return_value=mock_client)
-    mock_client.secrets.kv.v2.read_secret_version.side_effect = \
-        OperationalError("Vault error")
+    mock_client.secrets.kv.v2.read_secret_version.side_effect = Forbidden("Vault error")
     mocker.patch(
         'builtins.open',
         mock_open(read_data='mocked-jwt-content')
