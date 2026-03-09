@@ -63,7 +63,7 @@ def test_get_connection_params_multiple_threads(db_config, mocker):
 
 
 @pytest.fixture
-def settings_dict(mocker):
+def settings_dict():
     return {
         'VAULT_ADDR': 'http://localhost:8200',
         'VAULT_K8S_ROLE': 'test-role',
