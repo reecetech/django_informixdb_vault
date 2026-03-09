@@ -8,8 +8,10 @@ import threading
 from datetime import datetime
 
 import hvac
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
+
 from django_informixdb import base
 
 threading_lock = threading.Lock()
@@ -82,7 +84,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
             None
         )
         if not maximum_credential_lifetime and 'VAULT_MAXIMUM_CREDENTIAL_LIFETIME' in os.environ:
-                    maximum_credential_lifetime = os.environ['VAULT_MAXIMUM_CREDENTIAL_LIFETIME']
+            maximum_credential_lifetime = os.environ['VAULT_MAXIMUM_CREDENTIAL_LIFETIME']
         if not maximum_credential_lifetime:
             maximum_credential_lifetime = self.DEFAULT_MAXIMUM_CREDENTIAL_LIFETIME
 
@@ -125,6 +127,7 @@ class DatabaseWrapper(base.DatabaseWrapper):
             if not hvac_client.is_authenticated():
                 raise OperationalError(
                     'Vault client failed to authenticate, provide JWT via K8s '
+                    'or basic token via VAULT_TOKEN in settings.  Ensure the credientials are valid and authorised.'
                 )
         except hvac.exceptions.VaultError as err:
             msg = err.args[0]
