@@ -8,15 +8,15 @@ import threading
 from datetime import datetime
 
 import hvac
-
 from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
-
 from django_informixdb import base
+
 
 threading_lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
+
 
 class DatabaseWrapper(base.DatabaseWrapper):
     """
@@ -56,7 +56,9 @@ class DatabaseWrapper(base.DatabaseWrapper):
             jwt_path = self.DEFAULT_K8S_JWT
 
         if not os.access(jwt_path, os.R_OK):
-            raise ImproperlyConfigured(f"Kubernetes Vault JWT is not readable at path {jwt_path}")
+            raise ImproperlyConfigured(
+                f"Kubernetes Vault JWT is not readable at path {jwt_path}"
+            )
 
         return jwt_path
 
@@ -83,8 +85,10 @@ class DatabaseWrapper(base.DatabaseWrapper):
             'VAULT_MAXIMUM_CREDENTIAL_LIFETIME',
             None
         )
-        if not maximum_credential_lifetime and 'VAULT_MAXIMUM_CREDENTIAL_LIFETIME' in os.environ:
-            maximum_credential_lifetime = os.environ['VAULT_MAXIMUM_CREDENTIAL_LIFETIME']
+        if not maximum_credential_lifetime and \
+                'VAULT_MAXIMUM_CREDENTIAL_LIFETIME' in os.environ:
+            maximum_credential_lifetime = os.environ[
+                'VAULT_MAXIMUM_CREDENTIAL_LIFETIME']
         if not maximum_credential_lifetime:
             maximum_credential_lifetime = self.DEFAULT_MAXIMUM_CREDENTIAL_LIFETIME
 
@@ -97,7 +101,11 @@ class DatabaseWrapper(base.DatabaseWrapper):
         with open(jwt_path, 'r', encoding='utf-8') as jwt_fh:
             jwt = jwt_fh.read()
 
-        client.auth_kubernetes(role, jwt, mount_point=self._get_k8s_auth_mount_point())
+        client.auth.kubernetes.login(
+            role=role,
+            jwt=jwt,
+            mount_point=self._get_k8s_auth_mount_point()
+        )
 
     def _auth_via_token(self, client):
         vault_token = self.settings_dict.get('VAULT_TOKEN', None)
@@ -107,10 +115,13 @@ class DatabaseWrapper(base.DatabaseWrapper):
         client.token = vault_token
 
     def get_authenticated_client(self):
-        """Gets an authenticated Vault client.  Raises an exception if the client is not authenticated."""
+        """Gets an authenticated Vault client.  Raises an exception
+         if the client is not authenticated."""
         vault_uri = self._get_vault_uri()
         if not vault_uri:
-            raise ImproperlyConfigured('VAULT_ADDR is a required setting for a Vault authenticated informix connection')
+            raise ImproperlyConfigured(
+                'VAULT_ADDR is a required setting for a Vault authenticated informix connection'
+            )
 
         hvac_client = hvac.Client(url=vault_uri)
 
@@ -122,8 +133,8 @@ class DatabaseWrapper(base.DatabaseWrapper):
         try:
             if not hvac_client.is_authenticated():
                 raise OperationalError(
-                    'Vault client failed to authenticate, provide JWT via K8s '
-                    'or basic token via VAULT_TOKEN in settings.  Ensure the credientials are valid and authorised.'
+                    'Vault client failed to authenticate, provide JWT via K8s or basic token via '
+                    'VAULT_TOKEN in settings. Ensure the credientials are valid and authorised.'
                 )
         except hvac.exceptions.VaultError as err:
             msg = err.args[0]
@@ -142,7 +153,9 @@ class DatabaseWrapper(base.DatabaseWrapper):
         """Gets a username and password pair from Vault."""
         vault_path = self._get_vault_path()
         if not vault_path:
-            raise ImproperlyConfigured('VAULT_PATH is a required setting for a Vault authenticated informix connection')
+            raise ImproperlyConfigured(
+                'VAULT_PATH is a required setting for a Vault authenticated informix connection'
+            )
 
         client = self.get_authenticated_client()
 
@@ -153,17 +166,27 @@ class DatabaseWrapper(base.DatabaseWrapper):
             )
 
             if 'data' not in secrets_response:
-                raise OperationalError('Response from Vault did not include required data')
+                raise OperationalError(
+                    'Response from Vault did not include required data'
+                )
             if 'data' not in secrets_response['data']:
-                raise OperationalError('Response from Vault did not include required data')
+                raise OperationalError(
+                    'Response from Vault did not include required data'
+                )
 
             secrets_data = secrets_response['data']['data']
             if 'username' not in secrets_data and 'password' not in secrets_data:
-                raise OperationalError('Response from Vault did not include a username and password')
+                raise OperationalError(
+                    'Response from Vault did not include a username and password'
+                )
             if 'username' not in secrets_data:
-                raise OperationalError('Response from Vault did not include a username')
+                raise OperationalError(
+                    'Response from Vault did not include a username'
+                )
             if 'password' not in secrets_data:
-                raise OperationalError('Response from Vault did not include a password')
+                raise OperationalError(
+                    'Response from Vault did not include a password'
+                )
 
         except hvac.exceptions.InvalidPath:
             raise OperationalError(f"No data found at path '{vault_path}'")
@@ -207,8 +230,8 @@ class DatabaseWrapper(base.DatabaseWrapper):
             if self._credentials_need_refresh():
                 username, password = self.get_credentials_from_vault()
                 logger.info(
-                    f"Retrieved username ({username}) and password from Vault"
-                    f" for database server {self.settings_dict['SERVER']}"
+                    f"Retrieved username ({username}) and password from Vault "
+                    f"for database server {self.settings_dict['SERVER']}"
                 )
                 self.settings_dict['USER'] = username
                 self.settings_dict['PASSWORD'] = password
