@@ -12,11 +12,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 from django_informixdb import base
 
-
 threading_lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
-
 
 class DatabaseWrapper(base.DatabaseWrapper):
     """
