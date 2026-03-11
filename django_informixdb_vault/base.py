@@ -97,7 +97,11 @@ class DatabaseWrapper(base.DatabaseWrapper):
         with open(jwt_path, 'r', encoding='utf-8') as jwt_fh:
             jwt = jwt_fh.read()
 
-        client.auth_kubernetes(role, jwt, mount_point=self._get_k8s_auth_mount_point())
+        client.auth.kubernetes.login(
+            role=role,
+            jwt=jwt,
+            mount_point=self._get_k8s_auth_mount_point()
+        )
 
     def _auth_via_token(self, client):
         vault_token = self.settings_dict.get('VAULT_TOKEN', None)
