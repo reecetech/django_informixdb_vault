@@ -31,7 +31,7 @@ dependencies = [
     "hvac >=2.0.0, < 3",
     "django >= 3.2.0, < 6",
     "django_informixdb ~= 1.13.0",
-    "pyodbc >= 4.0.0, < 5"
+    "pyodbc >= 5.0.0, < 6"
 ]
 
 [optional-dependencies]
